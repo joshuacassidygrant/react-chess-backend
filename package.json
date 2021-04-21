@@ -1,0 +1,16 @@
+{
+    "name": "react-chess-backend",
+    "version": "0.0.1",
+    "description": "It's a backend!",
+    "dependencies": {
+        "express": "^4.17.1"
+    },
+    "main": "index.js",
+    "repository": "https://github.com/joshuacassidygrant/react-chess-backend.git",
+    "author": "Joshua Grant <jc.grant22@gmail.com>",
+    "license": "MIT",
+    "private": false,
+    "scripts": {
+        "start": "node index.js"
+    }
+}
