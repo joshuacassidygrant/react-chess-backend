@@ -38,11 +38,14 @@ io.on("connection", (socket) => {
         rooms[req.room] = {id: req.room, users: {[socket.id]: {socket: socket.id, name: req.name, role: -1}}}
       }
       socket.join(req.room);
+      io.to(req.room).emit("users-changed", rooms[req.room].users);
     });
     socket.on("request-role", (req) => {
       rooms[req.room].users[socket.id].role = req.role;
       io.to(req.room).emit("users-changed", rooms[req.room].users);
-
+    });
+    socket.on("request-chat", (req) => {
+      io.to(req.room).emit("approved-chat", {username: req.username, message: req.message});
     });
     socket.on("disconnect", () => {
         console.log("disco");
