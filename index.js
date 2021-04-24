@@ -3,6 +3,8 @@ const http = require('http');
 
 const app = express();
 const cors = require('cors');
+const { json } = require('express');
+const { RSA_PKCS1_PADDING } = require('constants');
 
 
 app.use(cors());
@@ -22,11 +24,24 @@ app.get("/", (req, res) => {
     res.send('ahoyhoy');
 });
 
+const rooms = {};
+
 io.on("connection", (socket) => {
-    console.log("user connected");
-    socket.on("request-move", (move) => {
-        console.log("message " + JSON.stringify(move));
-        io.emit('approved-move', move);
+    socket.on("request-move", (req) => {
+        // TODO: validate move
+        io.to(req.room).emit("approved-move", req.move);
+    });
+    socket.on("request-join-room", (req) => { 
+      if (req.room in rooms) {
+        rooms[req.room].users[socket.id]={socket: socket.id, name: req.name, role: -1};
+      } else {
+        rooms[req.room] = {id: req.room, users: {[socket.id]: {socket: socket.id, name: req.name, role: -1}}}
+      }
+      socket.join(req.room);
+    });
+    socket.on("request-role", (req) => {
+      rooms[req.room].users[socket.id].role = req.role;
+      io.to(req.room).emit("users-changed", rooms[req.room].users);
 
     });
     socket.on("disconnect", () => {
