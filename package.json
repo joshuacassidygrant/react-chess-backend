@@ -3,7 +3,9 @@
     "version": "0.0.1",
     "description": "It's a backend!",
     "dependencies": {
-        "express": "^4.17.1"
+        "cors": "^2.8.5",
+        "express": "^4.17.1",
+        "socket.io": "^4.0.1"
     },
     "main": "index.js",
     "repository": "https://github.com/joshuacassidygrant/react-chess-backend.git",
