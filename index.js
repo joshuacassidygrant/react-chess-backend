@@ -47,6 +47,11 @@ io.on("connection", (socket) => {
     socket.on("request-chat", (req) => {
       io.to(req.room).emit("approved-chat", {username: req.username, message: req.message});
     });
+    socket.on("leave-room", (room) => {
+      if (!(room in rooms)) return;
+      rooms[room].users = {...rooms[room].users, [socket.id]: undefined}
+      io.to(room).emit("users-changed", rooms[room].users);
+    })
     socket.on("disconnect", () => {
         console.log("disco");
     });
