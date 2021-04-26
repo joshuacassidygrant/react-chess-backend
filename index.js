@@ -3,6 +3,7 @@ const http = require('http');
 
 const app = express();
 const cors = require('cors');
+const randomWords = require("./random-word-list.json");
 const { json } = require('express');
 const { RSA_PKCS1_PADDING } = require('constants');
 
@@ -21,7 +22,11 @@ const io = require("socket.io")(server, {
 
 app.get("/", (req, res) => {
     res.header("Access-Control-Allow-Origin", "http://localhost:3000");
-    res.send('ahoyhoy');
+});
+
+app.get("/random", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.send(randomWord(req.query.n));
 });
 
 const rooms = {};
@@ -61,3 +66,11 @@ io.on("connection", (socket) => {
 server.listen(3001, () => {
   console.log("listening on :3001");
 });
+
+const randomWord = (n) => {
+  let str = "";
+  for (let i = 0 ; i < n; i++) {
+    str += randomWords.words[Math.floor(Math.random() * randomWords.words.length)] + "-";
+  }
+  return str.slice(0, -1);
+}
