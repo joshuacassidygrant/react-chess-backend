@@ -36,6 +36,7 @@ io.on("connection", (socket) => {
         // TODO: validate move
         io.to(req.room).emit("approved-move", req.move);
     });
+
     socket.on("request-join-room", (req) => { 
       if (req.room in rooms) {
         rooms[req.room].users[socket.id]={socket: socket.id, name: req.name, role: -1};
@@ -45,18 +46,26 @@ io.on("connection", (socket) => {
       socket.join(req.room);
       io.to(req.room).emit("users-changed", rooms[req.room].users);
     });
+
     socket.on("request-role", (req) => {
       rooms[req.room].users[socket.id].role = req.role;
       io.to(req.room).emit("users-changed", rooms[req.room].users);
     });
+
     socket.on("request-chat", (req) => {
       io.to(req.room).emit("approved-chat", {username: req.username, message: req.message});
     });
+
     socket.on("leave-room", (room) => {
       if (!(room in rooms)) return;
       rooms[room].users = {...rooms[room].users, [socket.id]: undefined}
       io.to(room).emit("users-changed", rooms[room].users);
     })
+
+    socket.on("request-restart", (room) => {
+      io.to(room).emit("restart-game");
+    })
+
     socket.on("disconnect", () => {
         console.log("disco");
     });
