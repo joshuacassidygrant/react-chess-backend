@@ -52,6 +52,11 @@ io.on("connection", (socket) => {
       io.to(req.room).emit("users-changed", rooms[req.room].users);
     });
 
+    socket.on("request-namechange", (req) => {
+      rooms[req.room].users[socket.id].name = req.name;
+      io.to(req.room).emit("users-changed", rooms[req.room].users);
+    });
+
     socket.on("request-chat", (req) => {
       io.to(req.room).emit("approved-chat", {username: req.username, message: req.message});
     });
