@@ -5,8 +5,6 @@ const app = express();
 const cors = require('cors');
 const randomWords = require("./random-word-list.json");
 const { json } = require('express');
-const { RSA_PKCS1_PADDING } = require('constants');
-
 
 app.use(cors());
 
@@ -19,6 +17,8 @@ const io = require("socket.io")(server, {
     }
   });
 
+const rooms = {};
+
 
 app.get("/", (req, res) => {
     res.header("Access-Control-Allow-Origin", "http://localhost:3000");
@@ -29,11 +29,27 @@ app.get("/random", (req, res) => {
   res.send(randomWord(req.query.n));
 });
 
-const rooms = {};
+app.get("/history", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  const room = req.query.room;
+  if (rooms[room] && rooms[room].history) {
+    res.send(rooms[room].history)
+    return;
+  }
+
+  res.send([]);
+})
 
 io.on("connection", (socket) => {
     socket.on("request-move", (req) => {
         // TODO: validate move
+
+        if (!rooms[req.room].history) {
+          rooms[req.room].history = []
+        }
+
+        rooms[req.room].history.push(req.move);
+
         io.to(req.room).emit("approved-move", req.move);
     });
 
