@@ -100,7 +100,6 @@ io.on("connection", (socket) => {
       socket.join(room);
       const newUsers = {...rooms[room].users, [uid]: {uid, data: users[uid], role: -1}}
       rooms[room].users = newUsers;
-      console.log(newUsers);
       io.to(room).emit("users-changed", newUsers);
     });
 
@@ -117,7 +116,6 @@ io.on("connection", (socket) => {
       const uid = validateUserId(req, users, "request-namechange");
       const room = validateReqRoom(req, rooms, "request-namechange", false);
       if (!room || !uid) return;
-      
       users[uid].name = req.name;
       io.to(req.room).emit("users-changed", rooms[req.room].users);
     });

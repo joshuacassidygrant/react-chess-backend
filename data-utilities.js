@@ -19,7 +19,6 @@ exports.validateUserId = (req, users, loc) => {
     if (!uid) return null;
     if (!(uid in users)) {
         console.warn(`No user found with id ${uid} in ${loc}`);
-        console.log(users);
         return null;
     } else {
         return uid;
