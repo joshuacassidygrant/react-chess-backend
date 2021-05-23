@@ -5,7 +5,6 @@ const app = express();
 const cors = require('cors');
 const randomWords = require("./random-word-list.json");
 const {v4: uuidv4} = require("uuid");
-const { json } = require('express');
 const {validateReqRoom, validateUserId} = require("./data-utilities.js");
 
 app.use(cors());
@@ -50,7 +49,6 @@ app.get("/room", (req,res) => {
     res.send(null);
     return;
   }
-
   res.send(rooms[room]);
 })
 
@@ -59,21 +57,27 @@ app.get("/user", (req, res) => {
 
   const uid = req.query.uid;
   const name = req.query.name;
+  const room = req.query.room;
 
   let id;
   if (uid && uid in users) {
     // User is found
     id=uid;
+    
   } else if (name) {
     id = uuidv4();
     users[id] = {id, name};
   } else {
-    res.send("Error! No name or id.");
+    res.send({user: null, role: -1});
     return;
   }
 
-  res.send(users[id]);
+  const role = (room && room in rooms && uid in rooms[room]) ? rooms[room].users[uid].role : -1;
+
+  res.send({user: users[id], role});
 })
+
+
 
 io.on("connection", (socket) => {
     socket.on("request-move", (req) => {
@@ -91,24 +95,30 @@ io.on("connection", (socket) => {
     socket.on("request-join-room", (req) => { 
       const uid = validateUserId(req, users, "request-join-room", false);
       const room = validateReqRoom(req, rooms, "request-join-room", true);
+      const role = "role" in req ? req.role : -1;
 
       if (!room || !uid) {
         return;
       }
 
-
       socket.join(room);
-      const newUsers = {...rooms[room].users, [uid]: {uid, data: users[uid], role: -1}}
+      const newUsers = {...rooms[room].users, [uid]: {uid, data: users[uid], role}}
       rooms[room].users = newUsers;
+ 
       io.to(room).emit("users-changed", newUsers);
-    });
+      io.emit("room-joined", {uid, room})
 
+    });
+    
     socket.on("request-role", (req) => {
       const uid = validateUserId(req, users, "request-role");
       const room = validateReqRoom(req, rooms, "request-role", false);
       if (!room || !uid) return;
 
-      rooms[req.room].users[uid].role = req.role;
+      if (req.room in rooms &&  uid in rooms[req.room].users && rooms[req.room].users[uid]) {
+        rooms[req.room].users[uid].role = req.role;
+      }
+
       io.to(req.room).emit("users-changed", rooms[req.room].users);
     });
 
@@ -139,7 +149,7 @@ io.on("connection", (socket) => {
     })
 
     socket.on("disconnect", () => {
-        console.log("disco");
+        console.log("disconnecting...");
     });
 
 });
