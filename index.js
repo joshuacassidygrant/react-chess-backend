@@ -7,6 +7,8 @@ const randomWords = require("./random-word-list.json");
 const {v4: uuidv4} = require("uuid");
 const {validateReqRoom, validateUserId} = require("./data-utilities.js");
 
+const port = process.env.PORT || 3001;
+
 app.use(cors());
 
 const server = http.createServer(app);
@@ -154,8 +156,8 @@ io.on("connection", (socket) => {
 
 });
 
-server.listen(3001, () => {
-  console.log("listening on :3001");
+server.listen(port, () => {
+  console.log(`listening on :${port}`);
 });
 
 const randomWord = (n) => {
