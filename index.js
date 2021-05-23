@@ -8,13 +8,14 @@ const {v4: uuidv4} = require("uuid");
 const {validateReqRoom, validateUserId} = require("./data-utilities.js");
 
 const port = process.env.PORT || 3001;
+const fePath = process.env.FE_PATH || "http://localhost:3000";
 
 app.use(cors());
 
 const server = http.createServer(app);
 const io = require("socket.io")(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: fePath,
       methods: ["GET", "POST"],
       credentials: true
     }
@@ -25,16 +26,16 @@ const users = {};
 
 
 app.get("/", (req, res) => {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    res.header("Access-Control-Allow-Origin", fePath);
 });
 
 app.get("/random", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header("Access-Control-Allow-Origin", fePath);
   res.send(randomWord(req.query.n));
 });
 
 app.get("/history", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header("Access-Control-Allow-Origin", fePath);
   const room = req.query.room;
   if (rooms[room] && rooms[room].history) {
     res.send(rooms[room].history)
@@ -45,7 +46,7 @@ app.get("/history", (req, res) => {
 })
 
 app.get("/room", (req,res) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header("Access-Control-Allow-Origin", fePath);
   const room = req.query.room;
   if (!room || !(room in rooms)) {
     res.send(null);
@@ -55,7 +56,7 @@ app.get("/room", (req,res) => {
 })
 
 app.get("/user", (req, res) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header("Access-Control-Allow-Origin", fePath);
 
   const uid = req.query.uid;
   const name = req.query.name;
