@@ -4,7 +4,8 @@ const http = require('http');
 const app = express();
 const cors = require('cors');
 const randomWords = require("./random-word-list.json");
-const { json } = require('express');
+const {v4: uuidv4} = require("uuid");
+const {validateReqRoom, validateUserId} = require("./data-utilities.js");
 
 app.use(cors());
 
@@ -18,6 +19,7 @@ const io = require("socket.io")(server, {
   });
 
 const rooms = {};
+const users = {};
 
 
 app.get("/", (req, res) => {
@@ -40,6 +42,43 @@ app.get("/history", (req, res) => {
   res.send([]);
 })
 
+app.get("/room", (req,res) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  const room = req.query.room;
+  if (!room || !(room in rooms)) {
+    res.send(null);
+    return;
+  }
+  res.send(rooms[room]);
+})
+
+app.get("/user", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+
+  const uid = req.query.uid;
+  const name = req.query.name;
+  const room = req.query.room;
+
+  let id;
+  if (uid && uid in users) {
+    // User is found
+    id=uid;
+    
+  } else if (name) {
+    id = uuidv4();
+    users[id] = {id, name};
+  } else {
+    res.send({user: null, role: -1});
+    return;
+  }
+
+  const role = (room && room in rooms && uid in rooms[room]) ? rooms[room].users[uid].role : -1;
+
+  res.send({user: users[id], role});
+})
+
+
+
 io.on("connection", (socket) => {
     socket.on("request-move", (req) => {
         // TODO: validate move
@@ -54,22 +93,40 @@ io.on("connection", (socket) => {
     });
 
     socket.on("request-join-room", (req) => { 
-      if (req.room in rooms) {
-        rooms[req.room].users[socket.id]={socket: socket.id, name: req.name, role: -1};
-      } else {
-        rooms[req.room] = {id: req.room, users: {[socket.id]: {socket: socket.id, name: req.name, role: -1}}}
-      }
-      socket.join(req.room);
-      io.to(req.room).emit("users-changed", rooms[req.room].users);
-    });
+      const uid = validateUserId(req, users, "request-join-room", false);
+      const room = validateReqRoom(req, rooms, "request-join-room", true);
+      const role = "role" in req ? req.role : -1;
 
+      if (!room || !uid) {
+        return;
+      }
+
+      socket.join(room);
+      const newUsers = {...rooms[room].users, [uid]: {uid, data: users[uid], role}}
+      rooms[room].users = newUsers;
+ 
+      io.to(room).emit("users-changed", newUsers);
+      io.emit("room-joined", {uid, room})
+
+    });
+    
     socket.on("request-role", (req) => {
-      rooms[req.room].users[socket.id].role = req.role;
+      const uid = validateUserId(req, users, "request-role");
+      const room = validateReqRoom(req, rooms, "request-role", false);
+      if (!room || !uid) return;
+
+      if (req.room in rooms &&  uid in rooms[req.room].users && rooms[req.room].users[uid]) {
+        rooms[req.room].users[uid].role = req.role;
+      }
+
       io.to(req.room).emit("users-changed", rooms[req.room].users);
     });
 
     socket.on("request-namechange", (req) => {
-      rooms[req.room].users[socket.id].name = req.name;
+      const uid = validateUserId(req, users, "request-namechange");
+      const room = validateReqRoom(req, rooms, "request-namechange", false);
+      if (!room || !uid) return;
+      users[uid].name = req.name;
       io.to(req.room).emit("users-changed", rooms[req.room].users);
     });
 
@@ -77,9 +134,13 @@ io.on("connection", (socket) => {
       io.to(req.room).emit("approved-chat", {username: req.username, message: req.message});
     });
 
-    socket.on("leave-room", (room) => {
-      if (!(room in rooms)) return;
-      rooms[room].users = {...rooms[room].users, [socket.id]: undefined}
+    socket.on("leave-room", (req) => {
+      if (!req) return;
+      const uid = validateUserId(req, users, "leave-room");
+      const room = validateReqRoom(req, rooms, "leave-room", false);
+      if (!room || !uid) return;
+
+      rooms[room].users = {...rooms[req.room].users, [uid]: undefined}
       io.to(room).emit("users-changed", rooms[room].users);
     })
 
@@ -88,7 +149,7 @@ io.on("connection", (socket) => {
     })
 
     socket.on("disconnect", () => {
-        console.log("disco");
+        console.log("disconnecting...");
     });
 
 });
