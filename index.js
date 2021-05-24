@@ -148,6 +148,9 @@ io.on("connection", (socket) => {
     })
 
     socket.on("request-restart", (room) => {
+      if (room in rooms) {
+        rooms[room].history = [];
+      }
       io.to(room).emit("restart-game");
     })
 
