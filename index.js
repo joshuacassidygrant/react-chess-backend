@@ -81,6 +81,11 @@ app.get("/user", (req, res) => {
 })
 
 
+app.get("/connect", (req, res) => {
+  res.header("Access-Control-Allow-Origin", fePath);
+  res.send({status: "UP", userCount: Object.keys(users).length, roomCount: Object.keys(rooms).length})
+})
+
 
 io.on("connection", (socket) => {
     socket.on("request-move", (req) => {
